@@ -1,19 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Activities;
-using System.Activities.Core.Presentation;
-using System.Activities.Presentation;
-using System.Activities.Presentation.Metadata;
-using System.Activities.Presentation.Toolbox;
-using System.Activities.Statements;
-using System.ServiceModel.Activities;
-using System.Activities.Presentation.Validation;
-using Microsoft.CSharp.Activities;
-using System.Activities.XamlIntegration;
-using System.Activities.Tracking;
+﻿using System.Activities;
 using System.Windows.Forms;
-using System.ComponentModel;
 
 namespace MeetupWfIntro.MeetupActivityLibrary.Misc
 {
@@ -24,7 +10,7 @@ namespace MeetupWfIntro.MeetupActivityLibrary.Misc
     {
         #region Arguments
         
-        public InArgument<Object> InputData { get; set; }
+        public InArgument<object> InputData { get; set; }
 
         #endregion
 
@@ -33,7 +19,7 @@ namespace MeetupWfIntro.MeetupActivityLibrary.Misc
         /// </summary>
         public ShowMessageBox():base()
         {
-            this.DisplayName = "Message";
+            DisplayName = "Message";
         }
 
         /// <summary>
@@ -41,7 +27,7 @@ namespace MeetupWfIntro.MeetupActivityLibrary.Misc
         /// </summary>
         protected override void Execute(CodeActivityContext context)
         {
-            MessageBox.Show(this.InputData.Get(context).ToString());
+            MessageBox.Show(InputData.Get(context).ToString());
         }
     }
 }

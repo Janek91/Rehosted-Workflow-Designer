@@ -1,11 +1,11 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
 using System.Activities.Presentation.Hosting;
 using System.Activities.Presentation.Model;
 using System.Activities.Presentation.View;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using Microsoft.CodeAnalysis;
 
 namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 {
@@ -32,7 +32,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         public void CloseExpressionEditors()
         {
-            
+
         }
 
         public IExpressionEditorInstance CreateExpressionEditor(AssemblyContextControlItem assemblies, ImportedNamespaceContextItem importedNamespaces, List<ModelItem> variables, string text)
@@ -53,16 +53,16 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
         public IExpressionEditorInstance CreateExpressionEditor(AssemblyContextControlItem assemblies, ImportedNamespaceContextItem importedNamespaces, List<ModelItem> variables, string text, Type expressionType, Size initialSize)
         {
             UpdateContext(assemblies, importedNamespaces);
-            var editor = new RoslynExpressionEditorInstance(initialSize);
+            RoslynExpressionEditorInstance editor = new RoslynExpressionEditorInstance(initialSize);
             editor.UpdateInstance(variables, text);
             return editor;
         }
 
         public void UpdateContext(AssemblyContextControlItem assemblies, ImportedNamespaceContextItem importedNamespaces)
         {
-            var references = new List<MetadataReference>();
+            List<MetadataReference> references = new List<MetadataReference>();
 
-            foreach (var assembly in assemblies.AllAssemblyNamesInContext)
+            foreach (string assembly in assemblies.AllAssemblyNamesInContext)
             {
                 try
                 {

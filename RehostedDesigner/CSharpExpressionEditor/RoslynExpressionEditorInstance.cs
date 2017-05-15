@@ -1,17 +1,17 @@
-﻿using ICSharpCode.AvalonEdit;
-using ICSharpCode.AvalonEdit.CodeCompletion;
-using ICSharpCode.AvalonEdit.Highlighting;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
+﻿using System;
+using System.Activities;
 using System.Activities.Presentation.Model;
 using System.Activities.Presentation.View;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using ICSharpCode.AvalonEdit;
+using ICSharpCode.AvalonEdit.CodeCompletion;
+using ICSharpCode.AvalonEdit.Highlighting;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 {
@@ -42,7 +42,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             this.Text = text;
 
             variableDeclarations = string.Join("", variables.Select(v => {
-                var c = v.GetCurrentValue() as System.Activities.Variable;
+                Variable c = v.GetCurrentValue() as Variable;
                 return c.Type.FullName + " " + c.Name + ";\n";
             }).ToArray());
         }
@@ -53,39 +53,39 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             {
                 try
                 {
-                    string startString = RoslynExpressionEditorService.Instance.UsingNamespaces 
-                        + "namespace SomeNamespace { public class NotAProgram { private void SomeMethod() { " 
+                    string startString = RoslynExpressionEditorService.Instance.UsingNamespaces
+                        + "namespace SomeNamespace { public class NotAProgram { private void SomeMethod() { "
                         + variableDeclarations + "var blah = ";
                     //string endString = " } } }";
 
-                    var tree = CSharpSyntaxTree.ParseText(startString + this.Text.Substring(0, this.CaretOffset));
-                    var compilation = CSharpCompilation.Create(
+                    SyntaxTree tree = CSharpSyntaxTree.ParseText(startString + this.Text.Substring(0, this.CaretOffset));
+                    CSharpCompilation compilation = CSharpCompilation.Create(
                         "MyCompilation",
                         syntaxTrees: new[] { tree },
                         references: RoslynExpressionEditorService.Instance.BaseAssemblies);
-                    var semanticModel = compilation.GetSemanticModel(tree);
+                    SemanticModel semanticModel = compilation.GetSemanticModel(tree);
 
                     // Ask for symbols at the caret position.
-                    var position = this.CaretOffset + startString.Length - 1;
-                    var token = tree.GetRoot().FindToken(position);
-                    var identifier = token.Parent;
+                    int position = this.CaretOffset + startString.Length - 1;
+                    SyntaxToken token = tree.GetRoot().FindToken(position);
+                    SyntaxNode identifier = token.Parent;
                     IList<ISymbol> symbols = null;
                     if (identifier is QualifiedNameSyntax)
                     {
-                        var semanticInfo = semanticModel.GetTypeInfo((identifier as QualifiedNameSyntax).Left);
-                        var type = semanticInfo.Type;
+                        TypeInfo semanticInfo = semanticModel.GetTypeInfo((identifier as QualifiedNameSyntax).Left);
+                        ITypeSymbol type = semanticInfo.Type;
                         symbols = semanticModel.LookupSymbols(position, container: type, includeReducedExtensionMethods: true);
                     }
                     else if (identifier is MemberAccessExpressionSyntax)
                     {
-                        var semanticInfo = semanticModel.GetTypeInfo((identifier as MemberAccessExpressionSyntax).Expression);
-                        var type = semanticInfo.Type;
+                        TypeInfo semanticInfo = semanticModel.GetTypeInfo((identifier as MemberAccessExpressionSyntax).Expression);
+                        ITypeSymbol type = semanticInfo.Type;
                         symbols = semanticModel.LookupSymbols(position, container: type, includeReducedExtensionMethods: true);
                     }
                     else if (identifier is IdentifierNameSyntax)
                     {
-                        var semanticInfo = semanticModel.GetTypeInfo(identifier as IdentifierNameSyntax);
-                        var type = semanticInfo.Type;
+                        TypeInfo semanticInfo = semanticModel.GetTypeInfo(identifier as IdentifierNameSyntax);
+                        ITypeSymbol type = semanticInfo.Type;
                         symbols = semanticModel.LookupSymbols(position, container: type, includeReducedExtensionMethods: true);
                     }
 
@@ -128,9 +128,9 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         private void TextArea_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (this.LostAggregateFocus != null)
+            if (LostAggregateFocus != null)
             {
-                this.LostAggregateFocus(sender, e);
+                LostAggregateFocus(sender, e);
             }
         }
 

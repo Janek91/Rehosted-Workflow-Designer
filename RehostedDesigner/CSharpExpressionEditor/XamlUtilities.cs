@@ -7,8 +7,8 @@
 
     internal static class XamlUtilities
     {
-        static Hashtable converterCache;
-        static object converterCacheSyncObject = new object();
+        private static Hashtable converterCache;
+        private static object converterCacheSyncObject = new object();
 
         public static TypeConverter GetConverter(Type itemType)
         {

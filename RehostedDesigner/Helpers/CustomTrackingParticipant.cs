@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Activities.Tracking;
-using System.IO;
 
 namespace RehostedWorkflowDesigner.Helpers
 {
@@ -12,9 +7,9 @@ namespace RehostedWorkflowDesigner.Helpers
     /// <summary>
     /// Workflow Tracking Participant - Custom Implementation
     /// </summary>
-    class CustomTrackingParticipant : TrackingParticipant
+    internal class CustomTrackingParticipant : TrackingParticipant
     {
-        public string TrackData = String.Empty;
+        public string TrackData = string.Empty;
 
         /// <summary>
         /// Appends the current TrackingRecord data to the Workflow Execution Log
@@ -27,7 +22,7 @@ namespace RehostedWorkflowDesigner.Helpers
 
             if (recordEntry != null)
             {
-                    TrackData += String.Format("[{0}] [{1}] [{2}]" + Environment.NewLine, recordEntry.EventTime.ToLocalTime().ToString(), recordEntry.Activity.Name, recordEntry.State);
+                    TrackData += string.Format("[{0}] [{1}] [{2}]" + Environment.NewLine, recordEntry.EventTime.ToLocalTime(), recordEntry.Activity.Name, recordEntry.State);
             }
         }
     }

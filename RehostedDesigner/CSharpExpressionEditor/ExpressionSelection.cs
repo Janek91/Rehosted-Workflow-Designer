@@ -6,7 +6,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 {
     internal class ExpressionSelection : ContextItem
     {
-        ModelItem modelItem;
+        private ModelItem modelItem;
 
         public ExpressionSelection()
         {
@@ -19,7 +19,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         public ModelItem ModelItem
         {
-            get { return this.modelItem; }
+            get { return modelItem; }
         }
 
         public override Type ItemType

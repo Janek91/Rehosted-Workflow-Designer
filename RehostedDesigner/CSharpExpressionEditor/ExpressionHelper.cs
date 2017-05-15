@@ -13,13 +13,13 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
     {
         internal static string GetExpressionString(Activity expression)
         {
-            return ExpressionHelper.GetExpressionString(expression, null as ParserContext);
+            return GetExpressionString(expression, null as ParserContext);
         }
 
         internal static string GetExpressionString(Activity expression, ModelItem owner)
         {
             ParserContext context = new ParserContext(owner);
-            return ExpressionHelper.GetExpressionString(expression, context);
+            return GetExpressionString(expression, context);
         }
 
         internal static string GetExpressionString(Activity expression, ParserContext context)
@@ -29,7 +29,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             {
                 Type expressionType = expression.GetType();
                 Type expressionArgumentType = expressionType.IsGenericType ? expressionType.GetGenericArguments()[0] : typeof(object);
-                bool isLiteral = expressionType.IsGenericType ? Type.Equals(typeof(Literal<>), expressionType.GetGenericTypeDefinition()) : false;
+                bool isLiteral = expressionType.IsGenericType ? Equals(typeof(Literal<>), expressionType.GetGenericTypeDefinition()) : false;
 
                 //handle ITextExpression
                 if (expression is ITextExpression)
@@ -57,7 +57,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                                 convertedString = literalValue.ToString();
                             }
                         }
-                        expressionString = expressionArgumentType == typeof(string) ? ("\"" + convertedString + "\"") : convertedString;
+                        expressionString = expressionArgumentType == typeof(string) ? "\"" + convertedString + "\"" : convertedString;
                     }
                 }
                 else if (expressionType.IsGenericType &&
@@ -97,7 +97,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                         expressionText.IndexOf("\"", 1, StringComparison.CurrentCulture) == expressionText.Length - 1;
 
                 //if expression is a string, we must ensure it is quoted, in case of other types - just get the converter
-                if ((shouldBeQuoted && isQuotedString) || !shouldBeQuoted)
+                if (shouldBeQuoted && isQuotedString || !shouldBeQuoted)
                 {
                     literalValueConverter = TypeDescriptor.GetConverter(type);
                 }
@@ -108,10 +108,10 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             {
                 try
                 {
-                    var valueToConvert = isQuotedString ? expressionText.Substring(1, expressionText.Length - 2) : expressionText;
-                    var converterValue = literalValueConverter.ConvertFrom(context, CultureInfo.CurrentCulture, valueToConvert);
+                    string valueToConvert = isQuotedString ? expressionText.Substring(1, expressionText.Length - 2) : expressionText;
+                    object converterValue = literalValueConverter.ConvertFrom(context, CultureInfo.CurrentCulture, valueToConvert);
                     //ok, succeeded - create literal of given type
-                    var concreteExpType = typeof(Literal<>).MakeGenericType(type);
+                    Type concreteExpType = typeof(Literal<>).MakeGenericType(type);
                     return (ActivityWithResult)Activator.CreateInstance(concreteExpType, converterValue);
                 }
                 catch { }

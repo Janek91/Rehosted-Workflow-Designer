@@ -5,17 +5,20 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Activities;
+using System.Activities.Core.Presentation;
+using System.Activities.Core.Presentation.Factories;
 using System.Activities.Presentation.Toolbox;
+using System.Activities.Statements;
 using System.Reflection;
 using System.IO;
 using System.Activities.XamlIntegration;
 using Microsoft.Win32;
 using RehostedWorkflowDesigner.Helpers;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 using System.Timers;
-using Twilio;
-using System.Activities.Presentation;
-using System.Runtime.Versioning;
+using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace RehostedWorkflowDesigner.Views
 {
@@ -30,6 +33,9 @@ namespace RehostedWorkflowDesigner.Views
         private Timer _timer;
 
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainWindow"/> class.
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
@@ -47,26 +53,36 @@ namespace RehostedWorkflowDesigner.Views
         }
 
 
+        /// <summary>
+        /// Gets or sets the execution log.
+        /// </summary>
+        /// <value>
+        /// The execution log.
+        /// </value>
         public string ExecutionLog
         {
-            get
-            {
-                if (_executionLog != null)
-                    return _executionLog.TrackData;
-                else
-                    return string.Empty;
-            }
-            set { _executionLog.TrackData = value; NotifyPropertyChanged("ExecutionLog"); }
+            get { return _executionLog != null ? _executionLog.TrackData : string.Empty; }
+            set { _executionLog.TrackData = value; NotifyPropertyChanged(nameof(ExecutionLog)); }
         }
 
 
-        private void TrackingDataRefresh(Object source, ElapsedEventArgs e)
+        /// <summary>
+        /// Tracks the data refresh.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="e">The <see cref="ElapsedEventArgs"/> instance containing the event data.</param>
+        private void TrackingDataRefresh(object source, ElapsedEventArgs e)
         {
-            NotifyPropertyChanged("ExecutionLog");
+            NotifyPropertyChanged(nameof(ExecutionLog));
         }
 
 
-        private void consoleExecutionLog_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        /// <summary>
+        /// Handles the TextChanged event of the consoleExecutionLog control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="TextChangedEventArgs"/> instance containing the event data.</param>
+        private void consoleExecutionLog_TextChanged(object sender, TextChangedEventArgs e)
         {
             consoleExecutionLog.ScrollToEnd();
         }
@@ -84,14 +100,14 @@ namespace RehostedWorkflowDesigner.Views
             //        delegate ()
             //        {
             //            //consoleExecutionLog.Text = _executionLog.TrackData;
-            NotifyPropertyChanged("ExecutionLog");
+            NotifyPropertyChanged(nameof(ExecutionLog));
             //        }
             //));
         }
 
 
         /// <summary>
-        /// Retrieves all Workflow Activities from the loaded assemblies and inserts them into a ToolboxControl 
+        /// Retrieves all Workflow Activities from the loaded assemblies and inserts them into a ToolboxControl
         /// </summary>
         private void InitializeActivitiesToolbox()
         {
@@ -100,7 +116,7 @@ namespace RehostedWorkflowDesigner.Views
                 _wfToolbox = new ToolboxControl();
 
                 //load dependency
-                AppDomain.CurrentDomain.Load("Twilio.Api");
+                AppDomain.CurrentDomain.Load("Twilio");
                 // load Custom Activity Libraries into current domain
                 AppDomain.CurrentDomain.Load("MeetupActivityLibrary");
                 // load System Activity Libraries into current domain; uncomment more if libraries below available on your system
@@ -125,63 +141,68 @@ namespace RehostedWorkflowDesigner.Views
                 int activitiesCount = 0;
                 foreach (Assembly activityLibrary in appAssemblies)
                 {
-                    var wfToolboxCategory = new ToolboxCategory(activityLibrary.GetName().Name);
-                    var actvities = from
-                                        activityType in activityLibrary.GetExportedTypes()
-                                    where
-                                        (activityType.IsSubclassOf(typeof(Activity))
-                                        || activityType.IsSubclassOf(typeof(NativeActivity))
-                                        || activityType.IsSubclassOf(typeof(DynamicActivity))
-                                        || activityType.IsSubclassOf(typeof(ActivityWithResult))
-                                        || activityType.IsSubclassOf(typeof(AsyncCodeActivity))
-                                        || activityType.IsSubclassOf(typeof(CodeActivity))
-                                        || activityType == typeof(System.Activities.Core.Presentation.Factories.ForEachWithBodyFactory<Type>)
-                                        || activityType == typeof(System.Activities.Statements.FlowNode)
-                                        || activityType == typeof(System.Activities.Statements.State)
-                                        || activityType == typeof(System.Activities.Core.Presentation.FinalState)
-                                        || activityType == typeof(System.Activities.Statements.FlowDecision)
-                                        || activityType == typeof(System.Activities.Statements.FlowNode)
-                                        || activityType == typeof(System.Activities.Statements.FlowStep)
-                                        || activityType == typeof(System.Activities.Statements.FlowSwitch<Type>)
-                                        || activityType == typeof(System.Activities.Statements.ForEach<Type>)
-                                        || activityType == typeof(System.Activities.Statements.Switch<Type>)
-                                        || activityType == typeof(System.Activities.Statements.TryCatch)
-                                        || activityType == typeof(System.Activities.Statements.While))
-                                        && activityType.IsVisible
-                                        && activityType.IsPublic
-                                        && !activityType.IsNested
-                                        && !activityType.IsAbstract
-                                        && (activityType.GetConstructor(Type.EmptyTypes) != null)
-                                        //&& !activityType.Name.Contains('`')
-                                    orderby
-                                        activityType.Name
-                                    select
-                                        new ToolboxItemWrapper(activityType);
-
-                    actvities.ToList().ForEach(wfToolboxCategory.Add);                    
-
-                    if (wfToolboxCategory.Tools.Count > 0)
+                    try
                     {
-                        _wfToolbox.Categories.Add(wfToolboxCategory);
-                        activitiesCount += wfToolboxCategory.Tools.Count;
+                        ToolboxCategory wfToolboxCategory = new ToolboxCategory(activityLibrary.GetName().Name);
+                        List<Type> activityTypes = activityLibrary.GetExportedTypes().
+                                Where(activityType => (
+                                activityType.IsSubclassOf(typeof(Activity)) ||
+                                activityType.IsSubclassOf(typeof(NativeActivity)) ||
+                                activityType.IsSubclassOf(typeof(DynamicActivity)) ||
+                                activityType.IsSubclassOf(typeof(ActivityWithResult)) ||
+                                activityType.IsSubclassOf(typeof(AsyncCodeActivity)) ||
+                                activityType.IsSubclassOf(typeof(CodeActivity)) ||
+                                activityType == typeof(ForEachWithBodyFactory<Type>) ||
+                                activityType == typeof(FlowNode) ||
+                                activityType == typeof(State) ||
+                                activityType == typeof(FinalState) ||
+                                activityType == typeof(FlowDecision) ||
+                                activityType == typeof(FlowNode) ||
+                                activityType == typeof(FlowStep) ||
+                                activityType == typeof(FlowSwitch<Type>) ||
+                                activityType == typeof(ForEach<Type>) ||
+                                activityType == typeof(Switch<Type>) ||
+                                activityType == typeof(TryCatch) ||
+                                activityType == typeof(While)) &&
+                                activityType.IsVisible &&
+                                activityType.IsPublic &&
+                                !activityType.IsNested &&
+                                !activityType.IsAbstract &&
+                                activityType.GetConstructor(Type.EmptyTypes) != null).
+                                OrderBy(activityType => activityType.Name).
+                                ToList();
+
+                        IEnumerable<ToolboxItemWrapper> actvities = activityTypes.Select(activityType => new ToolboxItemWrapper(activityType));
+
+                        actvities.ToList().ForEach(wfToolboxCategory.Add);
+
+                        if (wfToolboxCategory.Tools.Count > 0)
+                        {
+                            _wfToolbox.Categories.Add(wfToolboxCategory);
+                            activitiesCount += wfToolboxCategory.Tools.Count;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
                     }
                 }
                 //fixed ForEach
                 _wfToolbox.Categories.Add(
-                       new System.Activities.Presentation.Toolbox.ToolboxCategory
+                       new ToolboxCategory
                        {
                            CategoryName = "CustomForEach",
                            Tools = {
-                                new ToolboxItemWrapper(typeof(System.Activities.Core.Presentation.Factories.ForEachWithBodyFactory<>)),
-                                new ToolboxItemWrapper(typeof(System.Activities.Core.Presentation.Factories.ParallelForEachWithBodyFactory<>))
+                                new ToolboxItemWrapper(typeof(ForEachWithBodyFactory<>)),
+                                new ToolboxItemWrapper(typeof(ParallelForEachWithBodyFactory<>))
                            }
                        }
                 );
 
-                LabelStatusBar.Content = String.Format("Loaded Activities: {0}", activitiesCount.ToString());
+                LabelStatusBar.Content = $"Loaded Activities: {activitiesCount}";
                 WfToolboxBorder.Child = _wfToolbox;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
@@ -191,6 +212,7 @@ namespace RehostedWorkflowDesigner.Views
         /// <summary>
         /// Retrieve Workflow Execution Logs and Workflow Execution Outputs
         /// </summary>
+        /// <param name="ev">The <see cref="WorkflowApplicationCompletedEventArgs"/> instance containing the event data.</param>
         private void WfExecutionCompleted(WorkflowApplicationCompletedEventArgs ev)
         {
             try
@@ -200,16 +222,13 @@ namespace RehostedWorkflowDesigner.Views
                 UpdateTrackingData();
 
                 //retrieve & display execution output
-                foreach (var item in ev.Outputs)
+                foreach (KeyValuePair<string, object> item in ev.Outputs)
                 {
                     consoleOutput.Dispatcher.Invoke(
-                        System.Windows.Threading.DispatcherPriority.Normal,
+                        DispatcherPriority.Normal,
                         new Action(
-                            delegate()
-                            {
-                                consoleOutput.Text += String.Format("[{0}] {1}" + Environment.NewLine, item.Key, item.Value);
-                            }
-                    ));
+                            () => consoleOutput.Text += $"[{item.Key}] {item.Value}{Environment.NewLine}"
+                        ));
                 }
 
             }
@@ -225,16 +244,18 @@ namespace RehostedWorkflowDesigner.Views
         /// <summary>
         /// Creates a new Workflow Application instance and executes the Current Workflow
         /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="ExecutedRoutedEventArgs"/> instance containing the event data.</param>
         private void CmdWorkflowRun(object sender, ExecutedRoutedEventArgs e)
         {
             //get workflow source from designer
             CustomWfDesigner.Instance.Flush();
-            MemoryStream workflowStream = new MemoryStream(ASCIIEncoding.Default.GetBytes(CustomWfDesigner.Instance.Text));
+            MemoryStream workflowStream = new MemoryStream(Encoding.Default.GetBytes(CustomWfDesigner.Instance.Text));
             DynamicActivity activityExecute = ActivityXamlServices.Load(workflowStream) as DynamicActivity;
 
             //configure workflow application
-            consoleExecutionLog.Text = String.Empty;
-            consoleOutput.Text = String.Empty;
+            consoleExecutionLog.Text = string.Empty;
+            consoleOutput.Text = string.Empty;
             _executionLog = new CustomTrackingParticipant();
             _wfApp = new WorkflowApplication(activityExecute);
             _wfApp.Extensions.Add(_executionLog);
@@ -250,6 +271,8 @@ namespace RehostedWorkflowDesigner.Views
         /// <summary>
         /// Stops the Current Workflow
         /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="ExecutedRoutedEventArgs"/> instance containing the event data.</param>
         private void CmdWorkflowStop(object sender, ExecutedRoutedEventArgs e)
         {
             //manual stop
@@ -266,18 +289,20 @@ namespace RehostedWorkflowDesigner.Views
         /// <summary>
         /// Save the current state of a Workflow
         /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="ExecutedRoutedEventArgs"/> instance containing the event data.</param>
         private void CmdWorkflowSave(object sender, ExecutedRoutedEventArgs e)
         {
-            if (_currentWorkflowFile == String.Empty)
+            if (_currentWorkflowFile == string.Empty)
             {
-                var dialogSave = new SaveFileDialog();
+                SaveFileDialog dialogSave = new SaveFileDialog();
                 dialogSave.Title = "Save Workflow";
                 dialogSave.Filter = "Workflows (.xaml)|*.xaml";
 
                 if (dialogSave.ShowDialog() == true)
                 {
                     CustomWfDesigner.Instance.Save(dialogSave.FileName);
-                        _currentWorkflowFile = dialogSave.FileName;                
+                    _currentWorkflowFile = dialogSave.FileName;
                 }
             }
             else
@@ -288,11 +313,13 @@ namespace RehostedWorkflowDesigner.Views
 
 
         /// <summary>
-        /// Creates a new Workflow Designer instance and loads the Default Workflow 
+        /// Creates a new Workflow Designer instance and loads the Default Workflow
         /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="ExecutedRoutedEventArgs"/> instance containing the event data.</param>
         private void CmdWorkflowNew(object sender, ExecutedRoutedEventArgs e)
         {
-            _currentWorkflowFile = String.Empty;
+            _currentWorkflowFile = string.Empty;
             CustomWfDesigner.NewInstance();
             WfDesignerBorder.Child = CustomWfDesigner.Instance.View;
             WfPropertyBorder.Child = CustomWfDesigner.Instance.PropertyInspectorView;
@@ -302,9 +329,11 @@ namespace RehostedWorkflowDesigner.Views
         /// <summary>
         /// Creates a new Workflow Designer instance and loads the Default Workflow with C# Expression Editor
         /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="ExecutedRoutedEventArgs"/> instance containing the event data.</param>
         private void CmdWorkflowNewCSharp(object sender, ExecutedRoutedEventArgs e)
         {
-            _currentWorkflowFile = String.Empty;
+            _currentWorkflowFile = string.Empty;
             CustomWfDesigner.NewInstanceCSharp();
             WfDesignerBorder.Child = CustomWfDesigner.Instance.View;
             WfPropertyBorder.Child = CustomWfDesigner.Instance.PropertyInspectorView;
@@ -314,16 +343,37 @@ namespace RehostedWorkflowDesigner.Views
         /// <summary>
         /// Loads a Workflow into a new Workflow Designer instance
         /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="ExecutedRoutedEventArgs"/> instance containing the event data.</param>
         private void CmdWorkflowOpen(object sender, ExecutedRoutedEventArgs e)
-        {            
-            var dialogOpen = new OpenFileDialog();
+        {
+            OpenFileDialog dialogOpen = new OpenFileDialog();
             dialogOpen.Title = "Open Workflow";
-            dialogOpen.Filter = "Workflows (.xaml)|*.xaml";
+            dialogOpen.Filter = "Workflows (.xaml, .xamlx)|*.xaml;*.xamlx";
 
             if (dialogOpen.ShowDialog() == true)
             {
-                using (var file = new StreamReader(dialogOpen.FileName, true))
+                using (StreamReader file = new StreamReader(dialogOpen.FileName, true))
                 {
+                    string content = file.ReadToEnd();
+                    Regex regex = new Regex(";assembly=[^\"]*");
+                    List<string> assemblies = regex.Matches(content).Cast<Match>().Select(x => x.Value.Replace(";assembly=", string.Empty)).Distinct().ToList();
+                    Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+                    foreach (string name in assemblies)
+                    {
+                        Assembly assembly = loadedAssemblies.FirstOrDefault(x => x.FullName.Split(',')[0] == name);
+                        if (assembly == null)
+                        {
+                            OpenFileDialog dllOpen = new OpenFileDialog();
+                            dllOpen.Title = $"Choose {name}.dll to use";
+                            dllOpen.Filter = "Dynamic-Link Libraries (.dll)|*.dll";
+                            if (dllOpen.ShowDialog() == true)
+                            {
+                                AppDomain.CurrentDomain.Load(AssemblyName.GetAssemblyName(dllOpen.FileName));
+                            }
+                        }
+                    }
                     CustomWfDesigner.NewInstance(dialogOpen.FileName);
                     WfDesignerBorder.Child = CustomWfDesigner.Instance.View;
                     WfPropertyBorder.Child = CustomWfDesigner.Instance.PropertyInspectorView;
@@ -338,13 +388,10 @@ namespace RehostedWorkflowDesigner.Views
 
         #region INotify
         public event PropertyChangedEventHandler PropertyChanged;
-        private void NotifyPropertyChanged(String propertyName)
+        private void NotifyPropertyChanged(string propertyName)
         {
             PropertyChangedEventHandler handler = PropertyChanged;
-            if (null != handler)
-            {
-                handler(this, new PropertyChangedEventArgs(propertyName));
-            }
+            handler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
     }

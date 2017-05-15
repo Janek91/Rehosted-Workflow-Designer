@@ -43,7 +43,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
                     if (fontFamily != null)
                     {
-                        convertedValue = (lineHeight * (double)lines) + 4;
+                        convertedValue = lineHeight * (double)lines + 4;
                     }
                 }
                 else

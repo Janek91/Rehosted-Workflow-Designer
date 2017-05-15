@@ -40,14 +40,14 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             ActivityWithResult expression;
             if (!useLocationExpression)
             {
-                if (!CSharpExpressionHelper.TryCreateLiteral(resultType, expressionText, out expression))
+                if (!TryCreateLiteral(resultType, expressionText, out expression))
                 {
-                    expression = CSharpExpressionHelper.CreateCSharpExpression(expressionText, useLocationExpression, resultType);
+                    expression = CreateCSharpExpression(expressionText, useLocationExpression, resultType);
                 }
             }
             else
             {
-                expression = CSharpExpressionHelper.CreateCSharpExpression(expressionText, useLocationExpression, resultType);
+                expression = CreateCSharpExpression(expressionText, useLocationExpression, resultType);
             }
 
             return expression;
@@ -84,7 +84,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                 }
 
                 // if expression is a string, we must ensure it is quoted, in case of other types - just get the converter
-                if ((shouldBeQuoted && isQuotedString) || !shouldBeQuoted)
+                if (shouldBeQuoted && isQuotedString || !shouldBeQuoted)
                 {
                     literalValueConverter = TypeDescriptor.GetConverter(type);
                 }
@@ -95,15 +95,15 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             {
                 try
                 {
-                    var valueToConvert = isQuotedString ? expressionText.Substring(1, expressionText.Length - 2) : expressionText;
-                    var convertedValue = literalValueConverter.ConvertFrom(null, CultureInfo.CurrentCulture, valueToConvert);
+                    string valueToConvert = isQuotedString ? expressionText.Substring(1, expressionText.Length - 2) : expressionText;
+                    object convertedValue = literalValueConverter.ConvertFrom(null, CultureInfo.CurrentCulture, valueToConvert);
 
                     // ok, succeeded - create literal of given type
                     Type concreteExpType = typeof(Literal<>).MakeGenericType(type);
                     literalExpression = (ActivityWithResult)Activator.CreateInstance(concreteExpType, convertedValue);
 
                     // C# expression is case sensitive, if it's not exactly "true"/"false" with case matching, we don't generate Literal<bool>
-                    if (type == typeof(bool) && (valueToConvert != "true") && (valueToConvert != "false"))
+                    if (type == typeof(bool) && valueToConvert != "true" && valueToConvert != "false")
                     {
                         literalExpression = null;
                     }
@@ -166,7 +166,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                     variablesInScope.AddRange(filteredVariables);
                     foreach (ModelItem variable in filteredVariables)
                     {
-                        variableNames.Add(((string)variable.Properties["Name"].ComputedValue));
+                        variableNames.Add((string)variable.Properties["Name"].ComputedValue);
                     }
 
                     currentItem = currentItem.Parent;
@@ -185,7 +185,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                     AsyncCodeActivityType.IsAssignableFrom(elementType) || GenericAsyncCodeActivityType.IsAssignableFrom(elementType)))
                 {
                     ModelProperty variablesProperty = currentItem.Properties["Variables"];
-                    if ((variablesProperty != null) && (variablesProperty.PropertyType == VariablesCollectionType))
+                    if (variablesProperty != null && variablesProperty.PropertyType == VariablesCollectionType)
                     {
                         return variablesProperty.Collection;
                     }
@@ -201,7 +201,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             if (currentItem.GetCurrentValue() is ActivityDelegate)
             {
                 delegateArguments.AddRange(currentItem.Properties
-                    .Where<ModelProperty>(p => (typeof(DelegateArgument).IsAssignableFrom(p.PropertyType) && null != p.Value))
+                    .Where<ModelProperty>(p => typeof(DelegateArgument).IsAssignableFrom(p.PropertyType) && null != p.Value)
                     .Select<ModelProperty, ModelItem>(p => p.Value));
             }
 

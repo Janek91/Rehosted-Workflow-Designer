@@ -1,21 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Activities;
-using System.Activities.Core.Presentation;
-using System.Activities.Presentation;
-using System.Activities.Presentation.Metadata;
-using System.Activities.Presentation.Toolbox;
-using System.Activities.Statements;
-using System.ServiceModel.Activities;
-using System.Activities.Presentation.Validation;
-using Microsoft.CSharp.Activities;
-using System.Activities.XamlIntegration;
-using System.Activities.Tracking;
 using System.Net;
 using System.IO;
-using System.Windows.Forms;
-using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using Newtonsoft.Json.Linq;
 
@@ -43,12 +29,12 @@ namespace MeetupWfIntro.MeetupActivityLibrary.MeetupAPI
         /// <summary>
         /// Total Number of Members of the specified Meetup Group
         /// </summary>
-        public OutArgument<Int32> MembersCount { get; set; }
+        public OutArgument<int> MembersCount { get; set; }
         
         /// <summary>
         /// Member Names of the specified Meetup Group
         /// </summary>
-        public OutArgument<Collection<String>> MembersNames { get; set; }
+        public OutArgument<Collection<string>> MembersNames { get; set; }
 
         /// <summary>
         /// Raw response from the Meetup REST API
@@ -72,13 +58,13 @@ namespace MeetupWfIntro.MeetupActivityLibrary.MeetupAPI
         protected override void Execute(CodeActivityContext context)
         {
             MembersCount.Set(context,0);
-            MembersNames.Set(context, new Collection<String>() { });
+            MembersNames.Set(context, new Collection<string>() { });
 
             string host = "https://api.meetup.com/2/members?order=name&sign=true&group_urlname={0}&key={1}";
-            string url = String.Format(host, GroupUrlName.Get(context), ApiKey.Get(context));
-            string response = String.Empty;
+            string url = string.Format(host, GroupUrlName.Get(context), ApiKey.Get(context));
+            string response = string.Empty;
 
-            HttpWebRequest request = HttpWebRequest.Create(url) as HttpWebRequest;
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
 
             if (null == request)
             {
@@ -91,12 +77,12 @@ namespace MeetupWfIntro.MeetupActivityLibrary.MeetupAPI
 
             RawResponse.Set(context, response);
 
-            var names = new Collection<String>() { };
+            Collection<string> names = new Collection<string>() { };
 
             JObject o = JObject.Parse(response);
             JArray a = (JArray)o["results"];
 
-            foreach(var item in a)
+            foreach(JToken item in a)
             {
                 names.Add(item["name"].ToString());
             }

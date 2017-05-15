@@ -1,10 +1,10 @@
-﻿using ICSharpCode.AvalonEdit.CodeCompletion;
+﻿using System;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Editing;
 using Microsoft.CodeAnalysis;
-using System;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 {
@@ -32,7 +32,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         public QueryCompletionData(string name, ISymbol[] symbols)
         {
-            this.Text = name;
+            Text = name;
             switch (symbols[0].Kind)
             {
                 case SymbolKind.Event: iconType = IconType.Event; break;
@@ -61,18 +61,18 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
         // Use this property if you want to show a fancy UIElement in the list.
         public object Content
         {
-            get { return this.Text; }
+            get { return Text; }
         }
 
         public object Description
         {
-            get { return "Description for " + this.Text; }
+            get { return "Description for " + Text; }
         }
 
         public void Complete(TextArea textArea, ISegment completionSegment,
             EventArgs insertionRequestEventArgs)
         {
-            textArea.Document.Replace(completionSegment, this.Text);
+            textArea.Document.Replace(completionSegment, Text);
         }
 
         public double Priority
@@ -80,7 +80,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             get { return 1.0; }
         }
 
-        enum IconType
+        private enum IconType
         {
             Property,
             Field,

@@ -13,11 +13,11 @@ using System.Xaml;
 
 namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 {
-    class ParserContext : LocationReferenceEnvironment, IValueSerializerContext, IXamlNameResolver, INamespacePrefixLookup, IXamlNamespaceResolver
+    internal class ParserContext : LocationReferenceEnvironment, IValueSerializerContext, IXamlNameResolver, INamespacePrefixLookup, IXamlNamespaceResolver
     {
-        ModelItem baseModelItem;
-        EditingContext context;
-        IDictionary<string, string> namespaceLookup;
+        private ModelItem baseModelItem;
+        private EditingContext context;
+        private IDictionary<string, string> namespaceLookup;
 
         public ParserContext()
         {
@@ -25,7 +25,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         public ParserContext(ModelItem modelItem)
         {
-            this.Initialize(modelItem);
+            Initialize(modelItem);
         }
 
         public IContainer Container
@@ -50,45 +50,45 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             get { return null; }
         }
 
-        IDictionary<string, string> NamespaceLookup
+        private IDictionary<string, string> NamespaceLookup
         {
             get
             {
-                if (this.namespaceLookup == null)
+                if (namespaceLookup == null)
                 {
-                    this.namespaceLookup = new Dictionary<string, string>();
+                    namespaceLookup = new Dictionary<string, string>();
                 }
-                return this.namespaceLookup;
+                return namespaceLookup;
             }
         }
 
         public bool Initialize(ModelItem modelItem)
         {
-            this.baseModelItem = modelItem;
+            baseModelItem = modelItem;
             if (null != modelItem)
             {
-                this.context = modelItem.GetEditingContext();
+                context = modelItem.GetEditingContext();
             }
-            return (null != this.baseModelItem);
+            return null != baseModelItem;
         }
 
         public override bool IsVisible(LocationReference reference)
         {
-            object other = this.Resolve(reference.Name);
+            object other = Resolve(reference.Name);
 
-            return object.ReferenceEquals(other, reference);
+            return ReferenceEquals(other, reference);
         }
 
         public override bool TryGetLocationReference(string name, out LocationReference result)
         {
-            result = (LocationReference)this.Resolve(name);
+            result = (LocationReference)Resolve(name);
             return result != null;
         }
 
 
         public string GetNamespace(string prefix)
         {
-            var nameSpace = this.NamespaceLookup
+            string nameSpace = NamespaceLookup
                 .Where(p => string.Equals(p.Value, prefix))
                 .Select(p => p.Key)
                 .FirstOrDefault();
@@ -106,9 +106,9 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
         public override IEnumerable<LocationReference> GetLocationReferences()
         {
             List<LocationReference> toReturn = new List<LocationReference>();
-            if (this.baseModelItem != null)
+            if (baseModelItem != null)
             {
-                List<ModelItem> declaredVariables = CSharpExpressionHelper.GetVariablesInScope(this.baseModelItem);
+                List<ModelItem> declaredVariables = CSharpExpressionHelper.GetVariablesInScope(baseModelItem);
 
                 foreach (ModelItem modelItem in declaredVariables)
                 {
@@ -120,7 +120,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         public object Resolve(string name)
         {
-            IEnumerable<LocationReference> variables = this.GetLocationReferences();
+            IEnumerable<LocationReference> variables = GetLocationReferences();
             return variables.FirstOrDefault<LocationReference>(p =>
             {
                 return p != null && p.Name != null && p.Name.Equals(name);
@@ -130,7 +130,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
         public object Resolve(string name, out bool isFullyInitialized)
         {
             object result = Resolve(name);
-            isFullyInitialized = (result != null);
+            isFullyInitialized = result != null;
             return result;
         }
 
@@ -147,12 +147,12 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
         {
             get
             {
-                var namespacesToReturn = new HashSet<string>();
+                HashSet<string> namespacesToReturn = new HashSet<string>();
 
                 //with custom ones, defined in user provided assemblies
-                if (null != this.namespaceLookup)
+                if (null != namespaceLookup)
                 {
-                    foreach (var nameSpace in this.namespaceLookup.Keys)
+                    foreach (string nameSpace in namespaceLookup.Keys)
                     {
                         //out of full namespace declaration (i.e. "clr-namespace:<namespace>;assembly=<assembly>"
                         //get clear namespace name
@@ -166,7 +166,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                     }
                 }
 
-                ImportedNamespaceContextItem importedNamespaces = this.context.Items.GetValue<ImportedNamespaceContextItem>();
+                ImportedNamespaceContextItem importedNamespaces = context.Items.GetValue<ImportedNamespaceContextItem>();
                 namespacesToReturn.UnionWith(importedNamespaces.ImportedNamespaces);
                 //return all namespaces
                 return namespacesToReturn;
@@ -210,7 +210,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
         public string LookupPrefix(string ns)
         {
             //get reference to namespace lookup dictionary (create one if necessary)
-            var lookupTable = this.NamespaceLookup;
+            IDictionary<string, string> lookupTable = NamespaceLookup;
             string prefix;
             //check if given namespace is already registered
             if (!lookupTable.TryGetValue(ns, out prefix))
@@ -234,14 +234,14 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             throw new NotSupportedException("Not Supported");
         }
 
-        void LoadNameSpace(List<NamespaceDeclaration> result)
+        private void LoadNameSpace(List<NamespaceDeclaration> result)
         {
-            if (null == this.context)
+            if (null == context)
             {
                 //Fx.Assert("EditingContext is null");
                 return;
             }
-            AssemblyContextControlItem assemblyContext = this.context.Items.GetValue<AssemblyContextControlItem>();
+            AssemblyContextControlItem assemblyContext = context.Items.GetValue<AssemblyContextControlItem>();
             if (null == assemblyContext)
             {
                 //Fx.Assert("AssemblyContextControlItem not defined in EditingContext.Items");
@@ -260,7 +260,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             }
         }
 
-        NamespaceDeclaration GetEntry(AssemblyName name)
+        private NamespaceDeclaration GetEntry(AssemblyName name)
         {
             string ns =
                 string.Format(CultureInfo.InvariantCulture, "clr-namespace:{0};assembly={1}",

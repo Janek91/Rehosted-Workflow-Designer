@@ -17,51 +17,51 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         internal ParserContext ParserContext { get; set; }
         internal Type ExpressionType { get; set; }
-        internal String ExpressionText { get; set; }
+        internal string ExpressionText { get; set; }
         internal EditingContext EditingContext { get; set; }
-        internal String ValidatedExpressionText { get; set; }
+        internal string ValidatedExpressionText { get; set; }
         internal bool UseLocationExpression { get; set; }
 
-        internal void Update(RoslynExpressionEditor etb)
+        internal void Update(RoslynExpressionEditor _etb)
         {
-            this.EditingContext = etb.OwnerActivity.GetEditingContext();
+            EditingContext = _etb.OwnerActivity.GetEditingContext();
 
             //setup ParserContext
-            this.ParserContext = new ParserContext(etb.OwnerActivity)
+            ParserContext = new ParserContext(_etb.OwnerActivity)
             {
                 //callee is a ExpressionTextBox
-                Instance = etb,
+                Instance = _etb,
                 //pass property descriptor belonging to epression's model property (if one exists)
-                //TODO: etb should have expressionModelProperty and the propertyDescriptor should be used here instead of passing null
+                //TODO: _etb should have expressionModelProperty and the propertyDescriptor should be used here instead of passing null
                 PropertyDescriptor = null,
             };
 
-            if (etb.ExpressionType != null)
+            if (_etb.ExpressionType != null)
             {
-                this.ExpressionType = etb.ExpressionType;
+                ExpressionType = _etb.ExpressionType;
             }
 
-            this.ValidatedExpressionText = this.ExpressionText;
-            if (etb.ExpressionEditorInstance != null)
+            ValidatedExpressionText = ExpressionText;
+            if (_etb.ExpressionEditorInstance != null)
             {
-                this.ExpressionText = etb.ExpressionEditorInstance.Text;
+                ExpressionText = _etb.ExpressionEditorInstance.Text;
             }
-            else if (etb.EditingTextBox != null)
+            else if (_etb.EditingTextBox != null)
             {
-                this.ExpressionText = etb.EditingTextBox.Text;
+                ExpressionText = _etb.EditingTextBox.Text;
             }
             else
             {
-                this.ExpressionText = etb.Text;
+                ExpressionText = _etb.Text;
             }
-            this.UseLocationExpression = etb.UseLocationExpression;
+            UseLocationExpression = _etb.UseLocationExpression;
         }
 
         internal IEnumerable<string> ReferencedAssemblies
         {
             get
             {
-                AssemblyContextControlItem assemblyContext = this.EditingContext.Items.GetValue<AssemblyContextControlItem>();
+                AssemblyContextControlItem assemblyContext = EditingContext.Items.GetValue<AssemblyContextControlItem>();
                 if (assemblyContext != null)
                 {
                     return assemblyContext.AllAssemblyNamesInContext;

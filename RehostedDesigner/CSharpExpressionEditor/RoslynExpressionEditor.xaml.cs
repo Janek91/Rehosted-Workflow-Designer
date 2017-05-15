@@ -25,25 +25,25 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
         private static readonly DependencyProperty hasValidationErrorProperty = DependencyProperty.Register("HasValidationError", typeof(bool), typeof(RoslynExpressionEditor), new PropertyMetadata(false));
         private static readonly DependencyProperty validationErrorMessageProperty = DependencyProperty.Register("ValidationErrorMessage", typeof(string), typeof(RoslynExpressionEditor), new PropertyMetadata(null));
 
-        double blockHeight = double.NaN;
-        double blockWidth = double.NaN;
+        private double blockHeight = double.NaN;
+        private double blockWidth = double.NaN;
         private const int validationWaitTime = 800;
 
-        bool isEditorLoaded = false;
-        string previousText = null;
-        TextBlock textBlock;
-        bool isBeginEditPending;
+        private bool isEditorLoaded = false;
+        private string previousText = null;
+        private TextBlock textBlock;
+        private bool isBeginEditPending;
 
-        IExpressionEditorService expressionEditorService;
+        private IExpressionEditorService expressionEditorService;
         private IExpressionEditorInstance expressionEditorInstance;
 
-        Control hostControl;
-        string editorName;
+        private Control hostControl;
+        private string editorName;
         private TextBox editingTextBox;
 
         private Type inferredType;
 
-        BackgroundWorker validator = null;
+        private BackgroundWorker validator = null;
 
         public string Text
         {
@@ -125,7 +125,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
                 if (declaredVariables.Count > 0)
                 {
-                    InferredType = ((LocationReference)(declaredVariables[0].GetCurrentValue())).Type;
+                    InferredType = ((LocationReference)declaredVariables[0].GetCurrentValue()).Type;
                 }
             }
 
@@ -152,7 +152,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                     // a) when the expressionText is empty AND it's a reference expression or
                     // b) when the expressionText is empty AND the DefaultValue property is null
                     if (Text.Length == 0 &&
-                        (UseLocationExpression || (DefaultValue == null)))
+                        (UseLocationExpression || DefaultValue == null))
                     {
                         Expression = null;
                     }
@@ -397,7 +397,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             }
         }
 
-        void OnGotTextBlockFocus(object sender, RoutedEventArgs e)
+        private void OnGotTextBlockFocus(object sender, RoutedEventArgs e)
         {
             if (Context == null)
             {
@@ -453,7 +453,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             }
         }
 
-        void OnEditorLoaded(object sender, RoutedEventArgs e)
+        private void OnEditorLoaded(object sender, RoutedEventArgs e)
         {
             if (!IsEditorLoaded)
             {
@@ -468,7 +468,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                     ImportedNamespaceContextItem importedNamespaces = Context.Items.GetValue<ImportedNamespaceContextItem>();
                     importedNamespaces.EnsureInitialized(Context);
                     //if the expression text is empty and the expression type is set, then we initialize the text to prompt text
-                    if (String.Equals(Text, string.Empty, StringComparison.OrdinalIgnoreCase) && ExpressionType != null)
+                    if (string.Equals(Text, string.Empty, StringComparison.OrdinalIgnoreCase) && ExpressionType != null)
                     {
                         Text = TypeToPromptTextConverter.GetPromptText(ExpressionType);
                     }
@@ -532,7 +532,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             }
         }
 
-        void OnEditorUnloaded(object sender, RoutedEventArgs e)
+        private void OnEditorUnloaded(object sender, RoutedEventArgs e)
         {
             // Blank the editorSession and the expressionEditor so as not to use up memory
             // Destroy both as you can only ever spawn one editor per session
@@ -553,13 +553,14 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             IsEditorLoaded = false;
         }
 
-        void OnGotEditingFocus(object sender, RoutedEventArgs e)
+        private void OnGotEditingFocus(object sender, RoutedEventArgs e)
         {
             //disable the error icon
             EditingState = EditingState.Editing;
             StartValidator();
         }
-        void StartValidator()
+
+        private void StartValidator()
         {
             if (Validator == null)
             {
@@ -628,11 +629,12 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             }
         }
 
-        void OnEditorLostAggregateFocus(object sender, EventArgs e)
+        private void OnEditorLostAggregateFocus(object sender, EventArgs e)
         {
             DoLostFocus();
         }
-        void OnEditorClosing(object sender, EventArgs e)
+
+        private void OnEditorClosing(object sender, EventArgs e)
         {
             if (ExpressionEditorInstance != null)
             {
@@ -663,7 +665,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             }
         }
 
-        static void ValidateExpression(RoslynExpressionEditor etb)
+        private static void ValidateExpression(RoslynExpressionEditor etb)
         {
             string errorMessage;
             if (etb.DoValidation(new ExpressionValidationContext(etb), out errorMessage))
@@ -671,7 +673,8 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                 etb.UpdateValidationError(errorMessage);
             }
         }
-        void UpdateValidationError(string errorMessage)
+
+        private void UpdateValidationError(string errorMessage)
         {
             if (!string.IsNullOrEmpty(errorMessage))
             {
@@ -686,7 +689,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             }
         }
 
-        bool DoValidation(ExpressionValidationContext validationContext, out string errorMessage)
+        private bool DoValidation(ExpressionValidationContext validationContext, out string errorMessage)
         {
             errorMessage = null;
 
@@ -764,23 +767,23 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         private void OnTextBlockLoaded(object sender, RoutedEventArgs e)
         {
-            this.textBlock = sender as TextBlock;
-            if (this.isBeginEditPending)
+            textBlock = sender as TextBlock;
+            if (isBeginEditPending)
             {
-                this.BeginEdit();
+                BeginEdit();
             }
         }
 
         public override void BeginEdit()
         {
-            if (this.textBlock != null)
+            if (textBlock != null)
             {
-                Keyboard.Focus(this.textBlock);
-                this.isBeginEditPending = false;
+                Keyboard.Focus(textBlock);
+                isBeginEditPending = false;
             }
             else
             {
-                this.isBeginEditPending = true;
+                isBeginEditPending = true;
             }
         }
 
@@ -790,7 +793,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
             {
                 case "Expression":
 
-                    this.OnExpressionChanged();
+                    OnExpressionChanged();
                     break;
             }
 
@@ -800,10 +803,10 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
         private void OnExpressionChanged()
         {
-            this.IsSupportedExpression = true;
-            if (this.Expression == null)
+            IsSupportedExpression = true;
+            if (Expression == null)
             {
-                this.Text = null;
+                Text = null;
             }
             else
             {
@@ -812,8 +815,8 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
                 // attached properties of the real ModelItem. So if we hook on this.Expression.PropertyChanged directly, we cannot get the property change notification.
                 // As the result, the UI of Variable/Argument designer won't be updated when the validation status is changed.
 
-                ActivityWithResult expression = this.Expression.GetCurrentValue() as ActivityWithResult;
-                this.Text = ExpressionHelper.GetExpressionString(expression);
+                ActivityWithResult expression = Expression.GetCurrentValue() as ActivityWithResult;
+                Text = ExpressionHelper.GetExpressionString(expression);
             }
         }
 
@@ -823,7 +826,7 @@ namespace RehostedWorkflowDesigner.CSharpExpressionEditor
 
             public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
             {
-                return TypeToPromptTextConverter.GetPromptText(value);
+                return GetPromptText(value);
             }
 
             internal static string GetPromptText(object value)
